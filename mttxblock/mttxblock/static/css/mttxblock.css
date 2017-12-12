@@ -1,0 +1,9 @@
+/* CSS for ModelTracerXBlock */
+
+.mttxblock_block .count {
+    font-weight: bold;
+}
+
+.mttxblock_block p {
+    cursor: pointer;
+}
