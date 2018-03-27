@@ -4,15 +4,21 @@ function ModelTracerXBlockStudio(runtime, element) {
   $(element).find('.save-button').bind('click', function() {
      var handleUrl = runtime.handlerUrl(element,'studio_save');
      var data = {
+          display_name : $(element).find('input#display_name').val(),
           tutorname : $(element).find('input#tutorname').val(),
+          skillname : $(element).find('input#skillname').val(),
           username : $(element).find('input#username').val(),
           htmlurl : $(element).find('input#htmlurl').val(),
           hintoptions : $(element).find('input#hintoptions').val(),
-          probselection : $(element).find('input#probselection').val()
+          probselection : $(element).find('input#probselection').val(),
+          typechecker : $(element).find('input#typechecker').val(),
+          inputmatcher : $(element).find('input#inputmatcher').val(),
+          section : document.getElementsByClassName("navigation-parent")[0].innerText,
+          subsection : document.getElementsByClassName("navigation-parent")[1].innerText,
+          unit: $("span[class='title-value']").text()
       };
       var message = validate(data);
       if(message == "success"){
-          alert(" sending ajax request");
           if(runtime.notify)
             runtime.notify('save',{state:'start'});
           $.ajax({
@@ -36,8 +42,6 @@ function ModelTracerXBlockStudio(runtime, element) {
   });
 
   function validate(data){
-    alert(" validating the data");
-
      if(data.tutorname.length == 0 || $.type(data.tutorname) !== 'string')
         return "Invalid tutor name";
      else if(data.username.length == 0 || $.type(data.username) !== 'string')

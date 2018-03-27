@@ -1,47 +1,50 @@
 import MySQLdb
 import datetime
 import time
+import uuid
 
 
 # from DBUtils.PooledDB import PooledDB
 
 
+
+
 class DB:
+    comma = ', '
+    colon = ':'
 
     def print_function(par):
         print "Hello : ", par
         return
 
-    def util_create_state_json(self, correct_map, input_state, last_submission_time, attempts, seed, done,
-                               student_answers,
-                               question_related):
-        state = '{' + correct_map + ',' + input_state + ',' + last_submission_time + ',' + attempts + ',' + seed + ',' + done + ',' + student_answers + ',' + question_related + '}'
-        return state
-
-    def util_create_correct_map(self, custom_field, hint, hint_mode, correctness, hint_message):
-        correct_map = '"correct_map":{"' + custom_field + '":{"hint":"' + hint + '", "hintmode": "' + hint_mode + '", "correctness":"' + correctness + '", "msg": "' + hint_message + '", "answervarible": null, "npoints": null, "queuestate": null}}'
-        return correct_map
-
-    def util_create_question_related(self, display_name, problem_name, problem_id, question, correct_answer, skill_name,
-                                     student_response_type, step_name, attempts, selection, action, student_input, feedback_text,
-                                     help_level, total_hints, school, class_name, course, section, subsection, unit):
-        print "building the question relation"
-        question_related = '"question_details":{"display_name":"' + display_name + '", "problem name":"' + problem_name + '", "problemId": "' + problem_id + '", "question": "' + question + '", "correct_answer": "' + correct_answer + '", "user_answer":"' + student_input + '","skillname":"' + skill_name + '", "kc": "' + skill_name + '", "time zone": "' + str(time.tzname[time.daylight]) + '", "student response type": "' + student_response_type + '", "student response subtype": "N/A", "tutor response type": "RESULT","tutor response subtype": "N/A", "level": "N/A", "problem view": "1", "step name": "'+selection+'", "attempt at step": "' + attempts + '", "selection": "' + selection + '", "Action": "' + action + '", "input": "' + student_input + '", "feedback text": "' + feedback_text + '", "feedback classification": "N/A", "help level": "' + help_level + '", "total number hints": "' + total_hints + '", "condition name": "N/A", "condition type": "N/A", "kc category": "N/A", "school": "' + school + '", "class": "' + class_name + '", "cf": "N/A", "course": "' + course + '", "section": "' + section + '", "subsection": "' + subsection + '", "unit": "' + unit + '"}'
-        print question_related
-        return question_related
-
-    def util_create_student_answers(self, custom_field, student_answer):
-        student_answers = '"student_answers":{"' + custom_field + '":"' + student_answer + '"}'
-        return student_answers
-
-    def util_create_input_state(self, custom_field):
-        input_state = '"' + custom_field + '": {}'
-        return input_state
-
-    def util_create_custom_field(self, custom_field, value):
-        field = '"' + custom_field + '": ' + value
-        field2 = '"' + custom_field + '" : "' + value + '"'
+    def util_create_response_details(self, timestamp, session_id, time_zone, student_response_type, student_response_subtype, tutor_response_type,
+                            tutor_response_subtype, level, problem_name, problem_view):
+        field = '"timestamp": "' + timestamp + '", ' + '"session id": "'+session_id+'", '+'"time zone": "' + time_zone + '", ' + '"student response type": "' + student_response_type + '", ' + '"student response subtype": "' + student_response_subtype + '", ' + '"tutor response type": "' + tutor_response_type + '", ' + '"tutor response subtype": "' + tutor_response_subtype + '", ' + '"level": "' + level + '", ' + '"problem name": "' + problem_name + '", ' + '"problem view": "' + problem_view + '", '
         return field
+
+    def util_create_problem_details(self,step_name, attempt_at_step, outcome, selection, action, student_input, feedback_text, feedback_classification, help_level, total_number_hints):
+        field = '"step name": "' + step_name + '", ' + '"attempt at step": "' + attempt_at_step + '", ' + '"outcome": "' + outcome + '", ' + '"selection": "' + selection + '", ' + '"action": "' + action + '", ' + '"input": "' + student_input + '", ' + '"feedback text": "' + feedback_text + '", ' + '"feedback classification": "' + feedback_classification + '", ' + '"help level": "' + help_level + '", ' + '"total number hints": "' + total_number_hints + '", '
+        return field
+
+    def util_create_application_details(self, condition_name, condition_type, kc, kc_category, school, class_name):
+        field = '"condition name": "'+condition_name+'", '+'"condition type": "'+condition_type+'", '+'"kc": "'+kc+'", '+'"kc category": "'+kc_category+'", '+'"school": "'+school+'", '+'"class": "'+class_name+'"'
+        return field
+
+    def util_create_cf_details(self,list_of_cf_fields):
+        field = ''
+        print "cf fields ######"
+        print str(list_of_cf_fields)
+        for key in list_of_cf_fields:
+            if isinstance(list_of_cf_fields[key],int):
+                field = field + ', "' + key + '": "' + str(list_of_cf_fields[key])+'"'
+            else:
+                field = field + ', "' + key + '": "' + list_of_cf_fields[key]+'"'
+
+        return field
+
+    def util_create_json(self, datalog):
+        json = '{"question_details":{ '+datalog+'}}'
+        return json
 
     def util_get_module_id(self, student_id, xblock_id):
         """
@@ -121,6 +124,7 @@ class DB:
                 print "No results found"
             else:
                 url = result[0].split("$")
+                print url
                 return url
         except Exception as e:
             print e
@@ -262,6 +266,47 @@ class DB:
         finally:
             db.close()
 
+    def util_get_dynamic_enable(self, student_id, course_id):
+        print "Get Course id: *" + course_id + "*, user_id is: " + student_id
+        db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp", charset='utf8')
+        cursor = db.cursor()
+
+        sql = """SELECT * FROM edxapp.auth_user where id = '%s' """
+        try:
+            cursor.execute(sql % (student_id))
+            result = cursor.fetchone()
+            if not cursor.rowcount:
+                print "No any results(auth_student) found."
+                return
+            email = str(result[7])
+            print "Get username and email from DB: ", str(result[4]) + ", " + str(result[7])
+
+            sql1 = """SELECT * FROM edxapp_csmh.pastel where email = '%s'"""
+            sql2 = """SELECT * FROM edxapp_csmh.condition_course_match where condition_name= '%s' and course_id= '%s'"""
+            if email != "":
+                cursor.execute(sql1 % (str(email)))
+                result1 = cursor.fetchone()
+                if not cursor.rowcount:
+                    print "No any results(pastel_student_id) found."
+                    return None, "admin", "admin", "admin", "1", "1"
+                condition = str(result1[7])
+                print "Get conditon from DB: ", condition
+
+                cursor.execute(sql2 % (condition, course_id))
+                result2 = cursor.fetchone()
+                enable_dynamic = str(result2[3])
+
+                db.commit()
+                cursor.close()
+                print 'Dynamic Link : '+enable_dynamic
+                return enable_dynamic
+        except Exception as e:
+            print e
+            db.rollback()
+        finally:
+            cursor.close()
+            db.close()
+
     def util_get_border_color(self, course_id, skillname):
         # start to save the XBlock related information in the database:
         db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp_csmh", charset='utf8');
@@ -287,3 +332,56 @@ class DB:
             db.rollback()
         finally:
             db.close()
+
+    def util_find_condition_by_course(self, course_id):
+        db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp_csmh", charset='utf8')
+        cursor = db.cursor()
+
+        # we should have only one course match one condition in this table:
+        # for select the same course to see if there is any other xblock type have the same id
+        sql = "select condition_name from edxapp_csmh.condition_course_match where course_id = '%s' " % (course_id)
+        try:
+            cursor.execute(sql)
+            result = cursor.fetchone()
+            print "result length is " + str(len(result))
+            if not cursor.rowcount:
+                # print "No any condition name found in table condition_course_match."
+                return "admin"
+            else:
+                # print "Found condition name in table condition_course_match: " + result[0]
+                return result[0]
+        except Exception as e:
+            print "I am getting error when finding the condition name from table condition_course_match."
+            print e
+            db.rollback()
+        finally:
+            db.close()
+
+    def util_find_school_class_bypastelid(self, pastel_student_id):
+        db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp_csmh", charset='utf8');
+        cursor = db.cursor();
+        # we should have only one course match one condition in this table:
+        # for select the same course to see if there is any other xblock type have the same id
+        sql = """SELECT school, class from edxapp_csmh.pastel where pastel_student_id = '%s' """
+        try:
+            cursor.execute(sql % pastel_student_id)
+            result1 = cursor.fetchone()
+            if not cursor.rowcount:
+                # print "No any school name found in table pastel."
+                return "admin", "admin"
+            else:
+                # print "Found school and class name in table pastel."
+                return str(result1[0]), str(result1[1])
+        except Exception as e:
+            print "I am getting error when finding the school and class name from table pastel."
+            print e
+            db.rollback()
+        finally:
+            db.close()
+
+    def util_generate_session_id(self, student_id):
+        # return uuid.uuid4().hex[:8] + '-' + uuid.uuid4().hex[:4] + '-' + uuid.uuid4().hex[:4] + '-' +
+        # uuid.uuid4().hex[:4] + '-' + uuid.uuid4().hex[:12]
+        ts = time.time()
+        timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d%H%M%S')
+        return student_id + '-' + uuid.uuid4().hex[:8] + '-' + timestamp

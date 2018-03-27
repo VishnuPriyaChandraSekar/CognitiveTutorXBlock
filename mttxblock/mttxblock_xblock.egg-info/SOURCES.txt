@@ -1,12 +1,15 @@
 mttxblock/__init__.py
 mttxblock/mttxblock.py
+mttxblock/xblock_utils.py
 mttxblock/static/.DS_Store
 mttxblock/static/README.txt
 mttxblock/static/css/mttxblock.css
 mttxblock/static/html/mttxblock.html
+mttxblock/static/html/mttxblockstudio.html
 mttxblock/static/js/.DS_Store
-mttxblock/static/js/src/hintWindow.js
+mttxblock/static/js/src/.DS_Store
 mttxblock/static/js/src/mttxblock.js
+mttxblock/static/js/src/mttxblockstudio.js
 mttxblock_xblock.egg-info/PKG-INFO
 mttxblock_xblock.egg-info/SOURCES.txt
 mttxblock_xblock.egg-info/dependency_links.txt

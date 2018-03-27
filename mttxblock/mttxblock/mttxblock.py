@@ -47,19 +47,34 @@ class ModelTracerXBlock(XBlock):
         help="enter either mostL, leastL, mostmastery or leastmastery",
     )
 
-    typechecker = String(
-        default="", scope=Scope.content,
-        help="TypeChecker class name"
-    )
+    typechecker = String(default="",scope=Scope.content,help="Type Checker")
+    inputmatcher = String(default="",scope=Scope.content,help="InputMatcher class name")
 
-    display_name = String(
-        default="CTAT tutor", scope=Scope.content
-    )
+    display_name = String(default="Cognitive Tutor", scope=Scope.content)
     studentID = Integer(default=0, scope=Scope.user_state)
 
     xblockID = String(default="", scope=Scope.user_state)
 
+    pastel_id = String(default="", scope=Scope.user_state)
+
+    section = String(default="",scope=Scope.content)
+
+    subsection = String(default="", scope=Scope.content)
+
+    unit = String(default="", scope=Scope.content)
+
+    session_id = String(default="", scope=Scope.user_info)
+
+    page_id = String(default="", scope=Scope.user_state)
+
+    dynamic_link = String(default="", scope=Scope.user_state)
+
+    kc = String(default="", scope=Scope.content)
+
+    seq_number = Integer(default=0, scope=Scope.user_info)
+
     logging = DB()
+
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
@@ -72,8 +87,6 @@ class ModelTracerXBlock(XBlock):
         The primary view of the ModelTracerXBlock, shown to students
         when viewing courses.
         """
-        self.studentID = self.runtime.user_id
-        self.xblockID = str(unicode(self.scope_ids.usage_id))
         html = self.resource_string("static/html/mttxblock.html")
         frag = Fragment(html.format(self=self))
         frag.add_css(self.resource_string("static/css/mttxblock.css"))
@@ -91,83 +104,120 @@ class ModelTracerXBlock(XBlock):
     @XBlock.json_handler
     def studio_save(self, data, suffix=''):
         try:
+            self.display_name = data['display_name']
             self.tutorname = data['tutorname']
+            self.kc = data['skillname']
             self.username = data['username']
             self.htmlurl = data['htmlurl']
             self.hintoptions = data['hintoptions']
             self.probselection = data['probselection']
-            print self.tutorname
+            self.typechecker = data['username'] + '.' + data['tutorname'] + '.' + data['typechecker']
+            if len(data['inputmatcher']) > 0:
+                self.inputmatcher = '-ssInputMatcher '+ data['username'] + '.' + data['tutorname'] + '.' + data['inputmatcher']
+            self.section = data['section']
+            self.subsection = data['subsection']
+            self.unit = data['unit']
+            print 'Input Matcher ' + self.inputmatcher
             return {'result': 'success'}
         except Exception as err:
             return {'result': 'fail', 'error': unicode(err)}
 
     @XBlock.json_handler
+    def module_skill_name_saved(self, data, suffix=''):
+        url = str(data.get('location_id'))
+        xblockID = str(unicode(self.scope_ids.usage_id))
+        paragraph_id = str(self.scope_ids.usage_id.block_id).replace("course","block")
+        course_id = str(self.scope_ids.usage_id.course_key)
+        location_id = course_id + "$" + url + "$" + paragraph_id
+        self.logging.util_save_module_skillname(self.kc,xblockID, location_id)
+        return {'result': 'success'}
+
+    @XBlock.json_handler
     def load_tutor(self, data, context=None):
+        print 'called here'
         try:
+            self.page_id = data['pageid']
+            self.studentID = self.runtime.user_id
+            self.xblockID = str(unicode(self.scope_ids.usage_id))
+            self.pastel_id = self.logging.util_get_pastel_student_id(self.studentID)
+            self.dynamic_link = self.logging.util_get_dynamic_enable(str(self.studentID),str(self.scope_ids.usage_id.course_key))
+            print 'pastel ID ###### ' + self.pastel_id + ' page ID ' + self.page_id
             return {'username': self.username, 'tutorname': self.tutorname, 'probselection': self.probselection,
-                    'hintoptions': self.hintoptions, 'studentID': self.studentID}
+                    'hintoptions': self.hintoptions, 'studentID': self.studentID, 'typechecker': self.typechecker,'inputmatcher':self.inputmatcher, 'dynamiclink':self.dynamic_link, 'kc': self.kc}
         except Exception as err:
             return {'result': 'fail', 'error': unicode(err)}
 
     @XBlock.json_handler
+    def refresh_session(self, data, suffix=''):
+        self.session_id = self.logging.util_generate_session_id(str(self.runtime.user_id))
+        self.seq_number = 0;
+
+    @XBlock.json_handler
+    def get_skill_mapping(self, data, suffix=''):
+        print 'skill mapping called here'
+        xblock_id = str(unicode(self.scope_ids.usage_id))
+        url = self.logging.util_get_skill_mapping(xblock_id, self.kc)
+        print url
+        return {'course_id': url[0], "location_id": url[1], "paragraph_id": url[2]}
+
+    @XBlock.json_handler
     def log_data(self, data, context=None):
-        school_details = self.xblockID.split('+')
-        school = school_details[0].split(':')[1]
-        class_name = school_details[1]
-        course = str(self.scope_ids.usage_id.course_key)
-        ts = time.time()
-        timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-        last_submission_time = self.logging.util_create_custom_field('last_submission_time', timestamp)
-        seed = self.logging.util_create_custom_field('seed', '1')
-        input_state = self.logging.util_create_input_state('mttxblock_input_state')
+        print data
 
-        if data['selection'] == 'done':
-            done = self.logging.util_create_custom_field('done', 'true')
+        self.seq_number += 1
+        if self.session_id == '' or self.session_id is None:
+            self.session_id = self.logging.util_generate_session_id(str(self.runtime.user_id))
+        if data['selection'] == 'N/A':
+            step_name = 'N/A'
         else:
-            done = self.logging.util_create_custom_field('done', 'false')
+            step_name = data['selection']+' '+str(data['input'])
+        print 'Step name  '+step_name
+        hintList = data['feedback']
 
-        if data['action'] == 'ButtonPressed':
-            student_answers = self.logging.util_create_student_answers('mttxblock_answers', data['selection'])
+        if isinstance(hintList, list):
+            help_level = data['help_level']
+            print str(help_level)
+            feedback_text = hintList[data['help_level']]
+            total_hints = str(len(hintList))
         else:
-            student_answers = self.logging.util_create_student_answers('mttxblock_answers', data['input'])
+            feedback_text = 'N/A'
+            total_hints = 'N/A'
 
-        if data['selection'] == 'hint':
-            hintlist = data['hintMessage']
-            question_related = self.logging.util_create_question_related(self.display_name, data['question'],
-                                                                         str(data['problemNo']), data['question'],
-                                                                         'correct_answer_undefined', data['skillName'],
-                                                                         'HINT_REQUEST', data['selection'],
-                                                                         str(data['attempts']), data['selection'],
-                                                                         data['action'], data['input'],
-                                                                         hintlist[data['hintLevel']],
-                                                                         str(data['hintLevel'] + 1), str(len(hintlist)),
-                                                                         school, class_name, course,
-                                                                         'section_undefined', 'subsection_undefined',
-                                                                         'unit_undefined')
-            correct_map = self.logging.util_create_correct_map('mttxblock', ''.join(hintlist), 'true',
-                                                               str(data['correctness']), hintlist[data['hintLevel']])
-            attempts = '"attempts": "N/A"'
+        cf = data['cf_field']
+        cf['cf_course'] = str(self.scope_ids.usage_id.course_key)
+        cf['cf_section'] = self.section
+        cf['cf_subsection'] = self.subsection
+        cf['cf_unit'] = self.unit
+        cf['cf_unit_id'] = str(self.scope_ids.usage_id.block_id).replace("course", "block")
+        cf['cf_user_runtime_id'] = self.studentID
+        cf['cf_student_pastel_id'] = self.pastel_id
+        cf['cf_question'] = data['problem_name']
+        cf['cf_choices'] = 'N/A'
+        cf['cf_video_url'] = 'N/A'
+        cf['cf_video_position'] = 'N/A'
+        cf['cf_page_id'] = self.page_id
+        cf['cf_seq_number'] = self.seq_number
+
+        if self.pastel_id is None:
+            school = 'admin'
+            class_name = 'admin'
+            condition = 'admin'
         else:
-            question_related = self.logging.util_create_question_related(self.display_name, data['question'],
-                                                                         str(data['problemNo']), data['question'],
-                                                                         'correct_answer_undefined', data['skillName'],
-                                                                         'ATTEMPT', data['selection'],
-                                                                         str(data['attempts']), data['selection'],
-                                                                         data['action'], data['input'], "N/A", "N/A",
-                                                                         "N/A", school, class_name, course,
-                                                                         'section_undefined',
-                                                                         'subsection_undefined_undefined',
-                                                                         'unit_undefined')
-            correct_map = self.logging.util_create_correct_map('mttxblock', 'N/A', 'false', str(data['correctness']),
-                                                               'N/A')
-            attempts = '"attempts": "' + str(data['attempts']) + '"'
+            course_id = str(self.scope_ids.usage_id.course_key)
+            print 'course_id '+' '+course_id
+            school, class_name = self.logging.util_find_school_class_bypastelid(self.pastel_id)
+            condition = self.logging.util_find_condition_by_course(course_id)
 
-        state = self.logging.util_create_state_json(correct_map, input_state, last_submission_time, attempts, seed,
-                                                    done, student_answers, question_related)
-        print state
-        student_module_id = self.logging.util_get_module_id(self.studentID, self.xblockID)
-        #DB.util_save_activity(state, timestamp, student_module_id)
-        return {'success': 'ok', 'selection': data['selection'], 'input': data['input'], 'hints': data['hintMessage']}
+        response_details = self.logging.util_create_response_details(str(data['timestamp']), self.session_id, data['timezone'], data['student_response_type'],'N/A','RESULT','N/A','N/A',str(data['problem_name']), str(data['problem_view']))
+        problem_details = self.logging.util_create_problem_details(step_name,str(data['attempts']),data['outcome'],data['selection'], data['action'],str(data['input']),feedback_text,'N/A',str(data['help_level']),total_hints)
+        application_details = self.logging.util_create_application_details(condition,'N/A',data['kc'],'CogTutor',school,class_name)
+        cf_details = self.logging.util_create_cf_details(cf)
+        json = self.logging.util_create_json(response_details+problem_details+application_details+cf_details)
+        student_module_id = 0
+        print json
+
+        self.logging.util_save_user_activity(json, data['timestamp'], student_module_id)
+        return {'success': 'ok', 'selection': data['selection'], 'input': data['input'], 'hints': feedback_text}
 
     # TO-DO: change this to create the scenarios you'd like to see in the
     # workbench while developing your XBlock.
