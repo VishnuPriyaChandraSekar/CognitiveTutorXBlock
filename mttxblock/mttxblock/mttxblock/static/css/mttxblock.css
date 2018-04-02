@@ -1,0 +1,43 @@
+/* CSS for ModelTracerXBlock */
+
+.mttxblock_block .count {
+    font-weight: bold;
+}
+
+.mttxblock_block p {
+    cursor: pointer;
+}
+
+.tutorSection div{
+    position: relative;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    min-width: 0;
+    word-wrap: break-word;
+    background-clip: border-box;
+    border: 1px solid rgba(0,0,0,.125);
+    border-radius: .25rem;
+}
+
+.tutorHeader {
+    padding: .75rem 1.25rem;
+    margin-bottom: 0;
+    background-color: rgba(0,0,0,.03);
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    width : 787px;
+    height : 26px;
+}
+
+.tutorBody {
+    background-color: #fff;
+    -webkit-box-flex: 1;
+    -ms-flex: 1 1 auto;
+    flex: 1 1 auto;
+    padding: 1.25rem;
+}
+
