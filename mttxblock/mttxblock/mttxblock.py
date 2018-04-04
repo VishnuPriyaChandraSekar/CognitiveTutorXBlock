@@ -55,7 +55,7 @@ class ModelTracerXBlock(XBlock):
 
     xblockID = String(default="", scope=Scope.user_state)
 
-    pastel_id = String(default="", scope=Scope.user_state)
+    pastel_id = String(scope=Scope.user_state)
 
     section = String(default="",scope=Scope.content)
 
@@ -114,10 +114,10 @@ class ModelTracerXBlock(XBlock):
             self.typechecker = data['username'] + '.' + data['tutorname'] + '.' + data['typechecker']
             if len(data['inputmatcher']) > 0:
                 self.inputmatcher = '-ssInputMatcher '+ data['username'] + '.' + data['tutorname'] + '.' + data['inputmatcher']
+                print 'Input Matcher ' + self.inputmatcher
             self.section = data['section']
             self.subsection = data['subsection']
             self.unit = data['unit']
-            print 'Input Matcher ' + self.inputmatcher
             return {'result': 'success'}
         except Exception as err:
             return {'result': 'fail', 'error': unicode(err)}
@@ -139,9 +139,12 @@ class ModelTracerXBlock(XBlock):
             self.page_id = data['pageid']
             self.studentID = self.runtime.user_id
             self.xblockID = str(unicode(self.scope_ids.usage_id))
-            self.pastel_id = self.logging.util_get_pastel_student_id(self.studentID)
+            self.pastel_id = self.logging.util_get_pastel_student_id(self.studentID, str(self.scope_ids.usage_id.course_key))
+            if self.pastel_id is None:
+                self.pastel_id = "admin"
             self.dynamic_link = self.logging.util_get_dynamic_enable(str(self.studentID),str(self.scope_ids.usage_id.course_key))
-            print 'pastel ID ###### ' + self.pastel_id + ' page ID ' + self.page_id
+            if self.pastel_id is not None:
+                print 'pastel ID ###### ' + self.pastel_id + ' page ID ' + self.page_id
             return {'username': self.username, 'tutorname': self.tutorname, 'probselection': self.probselection,
                     'hintoptions': self.hintoptions, 'studentID': self.studentID, 'typechecker': self.typechecker,'inputmatcher':self.inputmatcher, 'dynamiclink':self.dynamic_link, 'kc': self.kc}
         except Exception as err:
@@ -156,6 +159,7 @@ class ModelTracerXBlock(XBlock):
     def get_skill_mapping(self, data, suffix=''):
         print 'skill mapping called here'
         xblock_id = str(unicode(self.scope_ids.usage_id))
+        print " KC " + self.kc + " XBlock " + xblock_id
         url = self.logging.util_get_skill_mapping(xblock_id, self.kc)
         print url
         return {'course_id': url[0], "location_id": url[1], "paragraph_id": url[2]}
@@ -171,7 +175,7 @@ class ModelTracerXBlock(XBlock):
             step_name = 'N/A'
         else:
             step_name = data['selection']+' '+str(data['input'])
-        print 'Step name  '+step_name
+
         hintList = data['feedback']
 
         if isinstance(hintList, list):
@@ -181,7 +185,18 @@ class ModelTracerXBlock(XBlock):
             total_hints = str(len(hintList))
         else:
             feedback_text = 'N/A'
-            total_hints = 'N/A'
+            total_hints = ''
+
+        if self.pastel_id == "admin":
+            self.pastel_id = "admin"
+            school = 'admin'
+            class_name = 'admin'
+            condition = 'admin'
+        else:
+            course_id = str(self.scope_ids.usage_id.course_key)
+            print 'course_id '+' '+course_id
+            school, class_name = self.logging.util_find_school_class_bypastelid(self.pastel_id)
+            condition = self.logging.util_find_condition_by_course(course_id, self.pastel_id)
 
         cf = data['cf_field']
         cf['cf_course'] = str(self.scope_ids.usage_id.course_key)
@@ -197,16 +212,6 @@ class ModelTracerXBlock(XBlock):
         cf['cf_video_position'] = 'N/A'
         cf['cf_page_id'] = self.page_id
         cf['cf_seq_number'] = self.seq_number
-
-        if self.pastel_id is None:
-            school = 'admin'
-            class_name = 'admin'
-            condition = 'admin'
-        else:
-            course_id = str(self.scope_ids.usage_id.course_key)
-            print 'course_id '+' '+course_id
-            school, class_name = self.logging.util_find_school_class_bypastelid(self.pastel_id)
-            condition = self.logging.util_find_condition_by_course(course_id)
 
         response_details = self.logging.util_create_response_details(str(data['timestamp']), self.session_id, data['timezone'], data['student_response_type'],'N/A','RESULT','N/A','N/A',str(data['problem_name']), str(data['problem_view']))
         problem_details = self.logging.util_create_problem_details(step_name,str(data['attempts']),data['outcome'],data['selection'], data['action'],str(data['input']),feedback_text,'N/A',str(data['help_level']),total_hints)

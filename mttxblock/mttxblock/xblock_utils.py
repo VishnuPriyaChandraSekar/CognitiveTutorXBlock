@@ -100,11 +100,12 @@ class DB:
             cursor.execute(sql % (xblock_id))
             result = cursor.fetchone()
             if not cursor.rowcount:
-                cursor.execute(sql1, (xblock_id, "mcqs", skillname, location_id))
+                cursor.execute(sql1, (xblock_id, "mtt", skillname, location_id))
                 db.commit()
                 print "Skillname has been saved in module_skillname table."
             else:
-                cursor.execute(sql2, ("text", skillname, location_id, xblock_id))
+                cursor.execute(sql2, ("mtt", skillname, location_id, xblock_id))
+                db.commit()
         except Exception as e:
             print e
             db.rollback()
@@ -234,9 +235,9 @@ class DB:
         finally:
             db.close()
 
-    def util_get_pastel_student_id(self, user_id):
-        db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp", charset='utf8');
-        cursor = db.cursor();
+    def util_get_pastel_student_id(self, user_id,course_id):
+        db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp", charset='utf8')
+        cursor = db.cursor()
 
         sql = """SELECT * FROM edxapp.auth_user where id = '%s' """
 
@@ -245,17 +246,18 @@ class DB:
             result = cursor.fetchone()
             if not cursor.rowcount:
                 print "No any results(auth_student) found."
-                return
+                return None
             email = str(result[7])
             print "Get username and email from DB: ", str(result[4]) + ", " + str(result[7])
 
-            sql1 = """SELECT * FROM edxapp_csmh.pastel where email = '%s'"""
-            if email != "":
-                cursor.execute(sql1 % (str(email)))
-                result1 = cursor.fetchone()
-                if not cursor.rowcount:
-                    print "No any results(pastel_student_id) found."
-                    return
+            sql1 = """SELECT * FROM edxapp_csmh.pastel where email = '%s' and course_id='%s'"""
+
+            cursor.execute(sql1 % (str(email), course_id))
+            result1 = cursor.fetchone()
+            if not cursor.rowcount:
+                print "No any results(pastel_student_id) found."
+                return None
+            else:
                 print "Get pastel_student_id from DB: ", str(result1[3])
                 pastel_student_id = str(result1[3])
                 db.commit()
@@ -288,7 +290,7 @@ class DB:
                 result1 = cursor.fetchone()
                 if not cursor.rowcount:
                     print "No any results(pastel_student_id) found."
-                    return None, "admin", "admin", "admin", "1", "1"
+                    return "1"
                 condition = str(result1[7])
                 print "Get conditon from DB: ", condition
 
@@ -333,15 +335,15 @@ class DB:
         finally:
             db.close()
 
-    def util_find_condition_by_course(self, course_id):
+    def util_find_condition_by_course(self, course_id, pastel_id):
         db = MySQLdb.connect("127.0.0.1", "root", "", "edxapp_csmh", charset='utf8')
         cursor = db.cursor()
 
         # we should have only one course match one condition in this table:
         # for select the same course to see if there is any other xblock type have the same id
-        sql = "select condition_name from edxapp_csmh.condition_course_match where course_id = '%s' " % (course_id)
+        sql = "select * from edxapp_csmh.pastel where course_id = '%s' and pastel_student_id = '%s'"
         try:
-            cursor.execute(sql)
+            cursor.execute(sql %(course_id, pastel_id))
             result = cursor.fetchone()
             print "result length is " + str(len(result))
             if not cursor.rowcount:
@@ -349,9 +351,9 @@ class DB:
                 return "admin"
             else:
                 # print "Found condition name in table condition_course_match: " + result[0]
-                return result[0]
+                return result[7]
         except Exception as e:
-            print "I am getting error when finding the condition name from table condition_course_match."
+            print "I am getting error when finding the condition name from table pastel."
             print e
             db.rollback()
         finally:
