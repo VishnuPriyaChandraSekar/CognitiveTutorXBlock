@@ -60,8 +60,8 @@ public class ProblemSelector {
 		 */
 		
 		List<SAI> wheelSpinning = new ArrayList<SAI>();
-		alp.clearProblemHistory(studentID, tutorName);
-		alp.updateState(studentID, tutorName, "wheelSpinning");
+		//alp.clearProblemHistory(studentID, tutorName);
+		//alp.updateState(studentID, tutorName, "wheelSpinning");
 		wheelSpinning.add(new SAI("wheelSpinning","detected","-1"));
 		return wheelSpinning;
 	}

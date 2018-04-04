@@ -5,7 +5,7 @@
 	<display-name>ProblemSelector</display-name>
 	<context-param>
 		<param-name>folder</param-name>
-		<param-value>/home/simstudent/Documents/Watson</param-value>
+		<param-value>/Users/simstudent/Documents/Watson</param-value>
 		<description>Parent folder for Problem Bank</description>
 	</context-param>
     <context-param>

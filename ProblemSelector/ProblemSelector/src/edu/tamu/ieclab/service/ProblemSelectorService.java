@@ -13,8 +13,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import edu.tamu.ieclab.entity.Problem;
 import edu.tamu.ieclab.entity.SAI;
 import edu.tamu.ieclab.logic.problem.ALPWrapper;
+import edu.tamu.ieclab.logic.problem.ProblemBank;
 import edu.tamu.ieclab.logic.problemSelectionHeuristics.*;
 
 @Path("")
@@ -70,5 +72,40 @@ public class ProblemSelectorService {
 		return Response.ok().entity("success").build();
 	}
 	
+	@GET
+	@Path("/getStatus")
+	@Produces(MediaType.TEXT_PLAIN)
+	public Response getStatus(@Context UriInfo info){
+		String status = "";
+		ALPWrapper alp = new ALPWrapper();
+		ALPWrapper.setDomain(this.context.getInitParameter("ALP"));
+		ProblemBank problemBank = new ProblemBank();
+		ProblemSelector ps = new ProblemSelector();
+		String studentID = info.getQueryParameters().getFirst("studentID");
+		String tutorname = info.getQueryParameters().getFirst("folder").split(",")[1];
+		String parentFolder = this.context.getInitParameter("folder");
+		String folder = parentFolder+"/"+info.getQueryParameters().getFirst("folder").replace(",", "/");
+		
+		String[] problemSolvedList = alp.getProblemSolved(studentID, tutorname);
+		List<Problem> problems = problemBank.readProblemBank(folder);
+		boolean mastery = ps.isMasteryReached(problems, problemBank, alp, studentID, tutorname);
+		
+		if(mastery){
+			status = "mastery";
+			alp.updateState(studentID, tutorname, "mastery");
+			alp.clearProblemHistory(studentID, tutorname);
+		}
+		else{
+			boolean wheelSpinning = ps.isWheelSpinning(problemSolvedList, problems);
+			status = (wheelSpinning == true) ? "wheelSpinning" : "practice";
+			if(status.equals("wheelSpinning")){
+				alp.clearProblemHistory(studentID, tutorname);
+				alp.updateState(studentID, tutorname, "wheelSpinning");
+			}
+
+		}
+		System.out.println(" Status : "+status);
+		return Response.ok().entity(status).build();
+	}
 	
 }

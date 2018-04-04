@@ -76,7 +76,7 @@ public class ALPWrapper {
      public void clearProblemHistory(String studentID, String tutorname){
     	 //String handler = "";
     	// delete(handler); 
-    	 String handler = "clearProblemSolvedHistory?studentID="+studentID+"&tutorName="+tutorname;
+    	 String handler = "clearProblemSolvedHistory?studentID="+studentID+"&tutorName="+tutorname+"&callback=";
     	 String jsonP = readJSON(handler);
 
    	  System.out.println(" jsonString : "+jsonP);
@@ -86,7 +86,9 @@ public class ALPWrapper {
    	  if(jsonP != null && jsonP.length() > 0){
    		  try {
    	      		String jsonString = jsonP.substring(jsonP.indexOf("(")+1,jsonP.lastIndexOf(")")).replace("\"", "");
-   				if(!jsonString.equals("200"))
+   				JSONObject jsonStatus = new JSONObject(jsonString);
+   				String status = jsonStatus.has("status") ? String.valueOf(jsonStatus.getInt("status"))  : "500";
+   	      		if(!status.equals("200"))
    					throw new Exception("Failure while clearing the database");
    			} catch (JSONException e) {
    				// TODO Auto-generated catch block
@@ -129,7 +131,7 @@ public class ALPWrapper {
       }
     
      public void updateState(String studentId, String tutorName, String status){
-   	  	 String handler = "updateStatus?studentID="+studentId+"&tutorname="+tutorName+"&status="+status;
+   	  	 String handler = "updateStatus?studentID="+studentId+"&tutorname="+tutorName+"&status="+status+"&callback=";
    	  	 String jsonP = readJSON(handler);   	     
    	     System.out.println(" jsonString : "+jsonP);
    	     /***
@@ -137,7 +139,10 @@ public class ALPWrapper {
    	      */
    	   if(jsonP != null && jsonP.length() > 0){
    		  try {
-   	      		if(!jsonP.equals("200"))
+   			    String jsonString = jsonP.substring(jsonP.indexOf("(")+1,jsonP.lastIndexOf(")")).replace("\"", "");
+				JSONObject jsonStatus = new JSONObject(jsonString);
+				String statusCode = jsonStatus.has("status") ? String.valueOf(jsonStatus.getInt("status"))  : "500";
+	      		if(!statusCode.equals("200"))
    	      			throw new Exception("Error while updating the status");
    			} catch (JSONException e) {
    				// TODO Auto-generated catch block
@@ -152,7 +157,7 @@ public class ALPWrapper {
      }
      
      public String getPreviousState(String studentId, String tutorName) {
-   	  	 String handler = "checkPreviousStatus?studentID="+studentId+"&tutor_name="+tutorName;
+   	  	 String handler = "checkPreviousStatus?studentID="+studentId+"&tutor_name="+tutorName+"&callback=";
    	  	 String jsonP = readJSON(handler);
    	     String previousStatus = "";
    	     
@@ -162,8 +167,9 @@ public class ALPWrapper {
    	      */
    	   if(jsonP != null && jsonP.length() > 0){
    		  try {
-   	      		previousStatus = jsonP.substring(jsonP.indexOf("(")+1,jsonP.lastIndexOf(")"));
-   	      		
+   			String jsonString = jsonP.substring(jsonP.indexOf("(")+1,jsonP.lastIndexOf(")")).replace("\"", "");
+			JSONObject jsonStatus = new JSONObject(jsonString);
+			previousStatus = jsonStatus.has("state") ? jsonStatus.getString("state")  : "";   	      		
    			} catch (JSONException e) {
    				// TODO Auto-generated catch block
    				e.printStackTrace();
