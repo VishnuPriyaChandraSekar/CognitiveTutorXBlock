@@ -100,11 +100,12 @@ class DB:
             cursor.execute(sql % (xblock_id))
             result = cursor.fetchone()
             if not cursor.rowcount:
-                cursor.execute(sql1, (xblock_id, "mcqs", skillname, location_id))
+                cursor.execute(sql1, (xblock_id, "mtt", skillname, location_id))
                 db.commit()
                 print "Skillname has been saved in module_skillname table."
             else:
-                cursor.execute(sql2, ("text", skillname, location_id, xblock_id))
+                cursor.execute(sql2, ("mtt", skillname, location_id, xblock_id))
+                db.commit()
         except Exception as e:
             print e
             db.rollback()
@@ -289,7 +290,7 @@ class DB:
                 result1 = cursor.fetchone()
                 if not cursor.rowcount:
                     print "No any results(pastel_student_id) found."
-                    return None, "admin", "admin", "admin", "1", "1"
+                    return "1"
                 condition = str(result1[7])
                 print "Get conditon from DB: ", condition
 

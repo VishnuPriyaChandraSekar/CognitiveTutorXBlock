@@ -159,6 +159,7 @@ class ModelTracerXBlock(XBlock):
     def get_skill_mapping(self, data, suffix=''):
         print 'skill mapping called here'
         xblock_id = str(unicode(self.scope_ids.usage_id))
+        print " KC " + self.kc + " XBlock " + xblock_id
         url = self.logging.util_get_skill_mapping(xblock_id, self.kc)
         print url
         return {'course_id': url[0], "location_id": url[1], "paragraph_id": url[2]}
