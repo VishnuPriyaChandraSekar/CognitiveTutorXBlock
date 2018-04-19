@@ -2,6 +2,7 @@
 import datetime
 import time
 import pkg_resources
+import pytz
 from xblock.core import XBlock
 from xblock.fields import Integer, Scope, String
 from xblock.fragment import Fragment
@@ -221,7 +222,10 @@ class ModelTracerXBlock(XBlock):
         student_module_id = 0
         print json
 
-        self.logging.util_save_user_activity(json, data['timestamp'], student_module_id)
+        ts = time.time()
+        timestamp = datetime.datetime.fromtimestamp(ts, pytz.timezone('US/Central')).strftime('%Y-%m-%d %H:%M:%S.%f')
+
+        self.logging.util_save_user_activity(json,timestamp, student_module_id)
         return {'success': 'ok', 'selection': data['selection'], 'input': data['input'], 'hints': feedback_text}
 
     # TO-DO: change this to create the scenarios you'd like to see in the
