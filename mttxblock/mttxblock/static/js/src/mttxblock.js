@@ -113,7 +113,7 @@ function ModelTracerXBlock(runtime, element) {
              var paragraphID = data.paragraph_id;
              var locationID = data.location_id;
              var hostname = $(location).attr('host') + "/courses/";
-             var url = "'http://" + hostname + courseID+ "/jump_to_id/" + locationID + "#" + paragraphID+ "'";
+             var url = "'https://" + hostname + courseID+ "/jump_to_id/" + locationID + "#" + paragraphID+ "'";
              $(element).find("#dynamicLinkSection").append("<h7 id='navigate_id'><mark>Click this <a id='dynamicLink' href="+url+">link</a> to review the course content and examples on solving this question.</mark></h7>");
              $("div[id='dynamicLinkSection'] a[id='dynamicLink']").click(function(event){
                     // need an ajax call to update the status as "Resource reviewed"
